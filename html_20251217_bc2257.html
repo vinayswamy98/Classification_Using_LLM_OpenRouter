@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Workflow System</title>
+    <style>
+        /* ===== BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2d3748;
+        }
+
+        /* ===== HEADER STYLES ===== */
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        /* ===== MAIN NAVIGATION ===== */
+        .nav-tabs {
+            background: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 0 2rem;
+            position: sticky;
+            top: 65px;
+            z-index: 99;
+            display: flex;
+            gap: 2rem;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #718096;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: #2d3748;
+        }
+
+        .nav-tab.active {
+            color: #3182ce;
+            border-bottom-color: #3182ce;
+        }
+
+        /* ===== WORKFLOW SUB NAVIGATION ===== */
+        .sub-nav {
+            background: #f7fafc;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .sub-nav.active {
+            display: block;
+        }
+
+        .sub-nav-tabs {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .sub-nav-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #4a5568;
+            background: transparent;
+            white-space: nowrap;
+        }
+
+        .sub-nav-tab:hover {
+            background: #ffffff;
+            color: #2d3748;
+        }
+
+        .sub-nav-tab.active {
+            background: #ffffff;
+            color: #3182ce;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* ===== LAYOUT ===== */
+        .container {
+            display: flex;
+            max-width: 1800px;
+            margin: 0 auto;
+            min-height: calc(100vh - 130px);
+        }
+
+        /* ===== FILTERS SIDEBAR ===== */
+        .filters {
+            width: 280px;
+            background: #ffffff;
+            padding: 1.5rem;
+            border-right: 1px solid #e2e8f0;
+            position: sticky;
+            top: 130px;
+            height: calc(100vh - 130px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            background: #ffffff;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #3182ce;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .content {
+            flex: 1;
+            padding: 2rem;
+            min-width: 0; /* Prevents overflow */
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+        }
+
+        .content-header h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-header p {
+            color: #718096;
+        }
+
+        /* ===== TAB CONTENT STYLES ===== */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sub-tab-content {
+            display: none;
+        }
+
+        .sub-tab-content.active {
+            display: block;
+        }
+
+        /* ===== AGENT FLOW VISUALIZATION ===== */
+        .agent-flow-container {
+            margin-bottom: 2rem;
+        }
+
+        .agent-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .flow-step {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .flow-step.completed {
+            border-color: #38a169;
+            background: linear-gradient(135deg, #ffffff 0%, #f0fff4 100%);
+        }
+
+        .flow-step.running {
+            border-color: #3182ce;
+            background: linear-gradient(135deg, #ffffff 0%, #ebf8ff 100%);
+            animation: pulse 2s infinite;
+        }
+
+        .flow-step.ready {
+            border-color: #e2e8f0;
+        }
+
+        .flow-step-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            background: #edf2f7;
+            color: #4a5568;
+        }
+
+        .flow-step.completed .step-number {
+            background: #38a169;
+            color: #ffffff;
+        }
+
+        .flow-step.running .step-number {
+            background: #3182ce;
+            color: #ffffff;
+        }
+
+        .step-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1a202c;
+            flex: 1;
+        }
+
+        .step-connector {
+            position: absolute;
+            left: 24px;
+            top: 100%;
+            height: 20px;
+            width: 2px;
+            background: #e2e8f0;
+        }
+
+        .flow-step:last-child .step-connector {
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(49, 130, 206, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(49, 130, 206, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(49, 130, 206, 0); }
+        }
+
+        /* ===== OVERVIEW CARDS ===== */
+        .overview-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .overview-card {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .overview-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .overview-card h3 {
+            font-size: 1rem;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+
+        .overview-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a202c;
+        }
+
+        /* ===== AGENT CARDS GRID ===== */
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .agent-card {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .agent-card:hover {
+            border-color: #cbd5e0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .agent-card.active {
+            border-color: #3182ce;
+            box-shadow: 0 4px 12px rgba(49,130,206,0.15);
+        }
+
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .agent-number {
+            background: #edf2f7;
+            color: #4a5568;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .agent-card.active .agent-number {
+            background: #3182ce;
+            color: #ffffff;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-running {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .status-ready {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .agent-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .agent-description {
+            color: #718096;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .agent-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-run {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            background: #3182ce;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-run:hover:not(:disabled) {
+            background: #2c5282;
+            transform: translateY(-1px);
+        }
+
+        .btn-run:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .btn-run.running {
+            background: #38a169;
+        }
+
+        .btn-run.completed {
+            background: #4a5568;
+        }
+
+        .btn-stop {
+            padding: 0.5rem;
+            background: #fc8181;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: none;
+        }
+
+        .btn-stop.visible {
+            display: block;
+        }
+
+        .btn-stop:hover {
+            background: #e53e3e;
+            transform: translateY(-1px);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .progress-bar.visible {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3182ce, #63b3ed);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* ===== DETAIL PANEL ===== */
+        .detail-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 2rem;
+            display: none;
+        }
+
+        .detail-panel.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== REPORTS LIST ===== */
+        .reports-list {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .report-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .report-item:hover {
+            background: #f7fafc;
+        }
+
+        .report-item:last-child {
+            border-bottom: none;
+        }
+
+        .report-info h4 {
+            font-size: 1rem;
+            color: #1a202c;
+            margin-bottom: 0.25rem;
+        }
+
+        .report-meta {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+
+        /* ===== BUTTON STYLES ===== */
+        .btn {
+            padding: 0.5rem 1rem;
+            background: #3182ce;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #2c5282;
+            transform: translateY(-1px);
+        }
+
+        /* ===== PERFORMANCE DASHBOARD ===== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dashboard-card h3 {
+            font-size: 1rem;
+            color: #718096;
+            margin-bottom: 1rem;
+        }
+
+        /* ===== TIMELINE VIEW ===== */
+        .timeline-view {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 1rem;
+            background: #e2e8f0;
+        }
+
+        .timeline-marker.completed {
+            background: #38a169;
+        }
+
+        .timeline-marker.running {
+            background: #3182ce;
+            animation: pulse 2s infinite;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        /* ===== RESPONSIVE STYLES ===== */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .filters {
+                width: 100%;
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .nav-tabs {
+                top: 0;
+                position: relative;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header, .content {
+                padding: 1rem;
+            }
+            
+            .nav-tabs {
+                padding: 0 1rem;
+            }
+            
+            .sub-nav {
+                padding: 1rem;
+            }
+            
+            .overview-cards {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            
+            .agent-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .overview-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tab {
+                padding: 0.75rem 0;
+                font-size: 0.875rem;
+            }
+            
+            .sub-nav-tab {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== HEADER ===== -->
+    <div class="header">
+        <h1>Multi-Agent Data Processing System</h1>
+    </div>
+
+    <!-- ===== MAIN NAVIGATION TABS ===== -->
+    <div class="nav-tabs">
+        <div class="nav-tab active" data-tab="overview">Overview</div>
+        <div class="nav-tab" data-tab="workflow">Workflow</div>
+        <div class="nav-tab" data-tab="performance">Performance</div>
+        <div class="nav-tab" data-tab="reports">Reports</div>
+    </div>
+
+    <!-- ===== WORKFLOW SUB NAVIGATION ===== -->
+    <div class="sub-nav" id="workflow-subnav">
+        <div class="sub-nav-tabs">
+            <div class="sub-nav-tab active" data-subtab="flow">Agent Flow</div>
+            <div class="sub-nav-tab" data-subtab="agents">Agent Details</div>
+            <div class="sub-nav-tab" data-subtab="pipeline">Pipeline</div>
+            <div class="sub-nav-tab" data-subtab="timeline">Timeline</div>
+            <div class="sub-nav-tab" data-subtab="logs">Logs</div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN CONTAINER ===== -->
+    <div class="container">
+        <!-- ===== FILTERS SIDEBAR ===== -->
+        <aside class="filters">
+            <div class="filter-group">
+                <label class="filter-label">Dataset</label>
+                <select class="filter-input">
+                    <option>Customer Feedback Q4 2024</option>
+                    <option>Sales Data December</option>
+                    <option>Product Reviews Archive</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Date Range</label>
+                <input type="date" class="filter-input" value="2024-12-01">
+                <input type="date" class="filter-input" value="2024-12-17" style="margin-top: 0.5rem;">
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Confidence Threshold</label>
+                <input type="range" class="filter-input" min="0" max="100" value="75">
+                <div style="text-align: center; margin-top: 0.25rem; font-size: 0.875rem; color: #4a5568;">75%</div>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select class="filter-input">
+                    <option>All</option>
+                    <option>Draft</option>
+                    <option>Validated</option>
+                    <option>Final</option>
+                </select>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT AREA ===== -->
+        <main class="content">
+            <!-- ===== OVERVIEW TAB ===== -->
+            <div class="tab-content active" id="overview-tab">
+                <div class="content-header">
+                    <h2>System Overview</h2>
+                    <p>Monitor the performance and status of your multi-agent workflow</p>
+                </div>
+
+                <div class="overview-cards">
+                    <div class="overview-card">
+                        <h3>Total Datasets Processed</h3>
+                        <div class="value">247</div>
+                    </div>
+                    <div class="overview-card">
+                        <h3>Active Workflows</h3>
+                        <div class="value">12</div>
+                    </div>
+                    <div class="overview-card">
+                        <h3>Average Confidence</h3>
+                        <div class="value">89%</div>
+                    </div>
+                    <div class="overview-card">
+                        <h3>Reports Generated</h3>
+                        <div class="value">156</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== WORKFLOW TAB ===== -->
+            <div class="tab-content" id="workflow-tab">
+                <!-- Agent Flow Sub-tab -->
+                <div class="sub-tab-content active" id="flow-subtab">
+                    <div class="content-header">
+                        <h2>Agent Flow</h2>
+                        <p>Visualize the sequential flow of data through your agent pipeline</p>
+                    </div>
+
+                    <div class="agent-flow-container">
+                        <div class="agent-flow">
+                            <!-- Step 1: Data Preparation -->
+                            <div class="flow-step completed">
+                                <div class="flow-step-header">
+                                    <div class="step-number">1</div>
+                                    <div class="step-title">Data Preparation</div>
+                                    <span class="status-badge status-completed">Completed</span>
+                                </div>
+                                <p>Ingests raw data, performs cleaning, normalization, and validation to ensure quality inputs for downstream agents.</p>
+                                <div class="step-connector"></div>
+                            </div>
+
+                            <!-- Step 2: Summarization -->
+                            <div class="flow-step completed">
+                                <div class="flow-step-header">
+                                    <div class="step-number">2</div>
+                                    <div class="step-title">Summarization Agent</div>
+                                    <span class="status-badge status-completed">Completed</span>
+                                </div>
+                                <p>Analyzes prepared data to extract key themes, patterns, and insights using advanced NLP techniques.</p>
+                                <div class="step-connector"></div>
+                            </div>
+
+                            <!-- Step 3: Validation -->
+                            <div class="flow-step running">
+                                <div class="flow-step-header">
+                                    <div class="step-number">3</div>
+                                    <div class="step-title">Validation Agent</div>
+                                    <span class="status-badge status-running">Running</span>
+                                </div>
+                                <p>Cross-references summaries with source data, flags inconsistencies, and assigns confidence scores.</p>
+                                <div class="agent-actions">
+                                    <button class="btn-run running" data-step="3">Running...</button>
+                                    <button class="btn-stop visible" data-step="3">Stop</button>
+                                </div>
+                                <div class="progress-bar visible">
+                                    <div class="progress-fill" style="width: 65%"></div>
+                                </div>
+                                <div class="step-connector"></div>
+                            </div>
+
+                            <!-- Step 4: Report Generation -->
+                            <div class="flow-step ready">
+                                <div class="flow-step-header">
+                                    <div class="step-number">4</div>
+                                    <div class="step-title">Report Generation</div>
+                                    <span class="status-badge status-ready">Ready</span>
+                                </div>
+                                <p>Compiles validated insights into structured reports with visualizations and actionable recommendations.</p>
+                                <div class="agent-actions">
+                                    <button class="btn-run" data-step="4">Run Agent</button>
+                                    <button class="btn-stop" data-step="4">Stop</button>
+                                </div>
+                                <div class="step-connector"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Details Sub-tab -->
+                <div class="sub-tab-content" id="agents-subtab">
+                    <div class="content-header">
+                        <h2>Agent Details</h2>
+                        <p>Inspect each processing stage and view detailed outputs</p>
+                    </div>
+
+                    <div class="agent-grid">
+                        <!-- Agent 1 Card -->
+                        <div class="agent-card" data-agent="1">
+                            <div class="agent-header">
+                                <div class="agent-number">1</div>
+                                <span class="status-badge status-completed">Completed</span>
+                            </div>
+                            <h3 class="agent-title">Data Preparation</h3>
+                            <p class="agent-description">Ingests raw data, performs cleaning, normalization, and validation to ensure quality inputs for downstream agents.</p>
+                            <div class="agent-actions">
+                                <button class="btn-run completed">Completed</button>
+                            </div>
+                        </div>
+
+                        <!-- Agent 2 Card -->
+                        <div class="agent-card" data-agent="2">
+                            <div class="agent-header">
+                                <div class="agent-number">2</div>
+                                <span class="status-badge status-completed">Completed</span>
+                            </div>
+                            <h3 class="agent-title">Summarization Agent</h3>
+                            <p class="agent-description">Analyzes prepared data to extract key themes, patterns, and insights using advanced NLP techniques.</p>
+                            <div class="agent-actions">
+                                <button class="btn-run completed">Completed</button>
+                            </div>
+                        </div>
+
+                        <!-- Agent 3 Card -->
+                        <div class="agent-card" data-agent="3">
+                            <div class="agent-header">
+                                <div class="agent-number">3</div>
+                                <span class="status-badge status-running">Running</span>
+                            </div>
+                            <h3 class="agent-title">Validation Agent</h3>
+                            <p class="agent-description">Cross-references summaries with source data, flags inconsistencies, and assigns confidence scores.</p>
+                            <div class="agent-actions">
+                                <button class="btn-run running">Running...</button>
+                                <button class="btn-stop visible">Stop</button>
+                            </div>
+                            <div class="progress-bar visible">
+                                <div class="progress-fill" style="width: 65%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 4 Card -->
+                        <div class="agent-card" data-agent="4">
+                            <div class="agent-header">
+                                <div class="agent-number">4</div>
+                                <span class="status-badge status-ready">Ready</span>
+                            </div>
+                            <h3 class="agent-title">Report Generation</h3>
+                            <p class="agent-description">Compiles validated insights into structured reports with visualizations and actionable recommendations.</p>
+                            <div class="agent-actions">
+                                <button class="btn-run">Run Agent</button>
+                                <button class="btn-stop">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipeline View Sub-tab -->
+                <div class="sub-tab-content" id="pipeline-subtab">
+                    <div class="content-header">
+                        <h2>Pipeline View</h2>
+                        <p>Visualize the complete data flow through your agent pipeline</p>
+                    </div>
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2rem; text-align: center;">
+                        <h3>Pipeline Visualization Coming Soon</h3>
+                        <p>Interactive diagram showing data flow between agents</p>
+                    </div>
+                </div>
+
+                <!-- Timeline View Sub-tab -->
+                <div class="sub-tab-content" id="timeline-subtab">
+                    <div class="content-header">
+                        <h2>Execution Timeline</h2>
+                        <p>Track the chronological execution of all agents</p>
+                    </div>
+                    <div class="timeline-view">
+                        <div class="timeline-item">
+                            <div class="timeline-marker completed"></div>
+                            <div class="timeline-content">
+                                <strong>Data Preparation</strong>
+                                <p>Completed at 10:30 AM • 15,432 records processed</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker completed"></div>
+                            <div class="timeline-content">
+                                <strong>Summarization Agent</strong>
+                                <p>Completed at 10:32 AM • 23 themes identified</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker running"></div>
+                            <div class="timeline-content">
+                                <strong>Validation Agent</strong>
+                                <p>Running • 18/23 checks completed</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <strong>Report Generation</strong>
+                                <p>Pending • Waiting for validation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Logs Sub-tab -->
+                <div class="sub-tab-content" id="logs-subtab">
+                    <div class="content-header">
+                        <h2>Execution Logs</h2>
+                        <p>Monitor detailed execution logs and system events</p>
+                    </div>
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2rem;">
+                        <h3>Real-time Logs</h3>
+                        <pre style="background: #f7fafc; padding: 1rem; border-radius: 4px; margin-top: 1rem; font-family: monospace; font-size: 0.875rem;">
+[10:30:15] INFO: Data Preparation agent started
+[10:30:17] INFO: Processing 15,432 records
+[10:30:19] INFO: Summarization agent initiated
+[10:30:25] INFO: Theme analysis completed (23 themes)
+[10:32:30] INFO: Validation agent started
+[10:32:45] INFO: 18/23 validation checks completed
+[10:32:50] INFO: Report generation queued
+                        </pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== PERFORMANCE TAB ===== -->
+            <div class="tab-content" id="performance-tab">
+                <div class="content-header">
+                    <h2>Performance Dashboard</h2>
+                    <p>Monitor system performance metrics and agent efficiency</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Processing Speed</h3>
+                        <div style="display: flex; align-items: flex-end; height: 150px; gap: 0.5rem; margin-top: 1rem;">
+                            <div style="flex: 1; background: #3182ce; height: 120px; border-radius: 4px 4px 0 0;"></div>
+                            <div style="flex: 1; background: #3182ce; height: 90px; border-radius: 4px 4px 0 0;"></div>
+                            <div style="flex: 1; background: #38a169; height: 150px; border-radius: 4px 4px 0 0;"></div>
+                            <div style="flex: 1; background: #e2e8f0; height: 40px; border-radius: 4px 4px 0 0;"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 1rem; font-size: 0.875rem;">
+                            <div>Average: 3.8s per agent</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Success Rate</h3>
+                        <div style="text-align: center; padding: 2rem;">
+                            <div style="font-size: 3rem; font-weight: 700; color: #38a169;">94.7%</div>
+                            <div style="color: #718096; margin-top: 0.5rem;">Completed successfully</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Resource Usage</h3>
+                        <div style="margin-top: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>CPU Usage</span>
+                                <span>42%</span>
+                            </div>
+                            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                <div style="width: 42%; height: 100%; background: #3182ce;"></div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Memory</span>
+                                <span>67%</span>
+                            </div>
+                            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                <div style="width: 67%; height: 100%; background: #38a169;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== REPORTS TAB ===== -->
+            <div class="tab-content" id="reports-tab">
+                <div class="content-header">
+                    <h2>Generated Reports</h2>
+                    <p>Access all completed analysis reports from your workflows</p>
+                </div>
+
+                <div class="reports-list">
+                    <div class="report-item">
+                        <div class="report-info">
+                            <h4>Q4 Customer Feedback Analysis</h4>
+                            <div class="report-meta">Generated on Dec 15, 2024 • Confidence: 89%</div>
+                        </div>
+                        <button class="btn">View Report</button>
+                    </div>
+                    <div class="report-item">
+                        <div class="report-info">
+                            <h4>Sales Performance Review - December</h4>
+                            <div class="report-meta">Generated on Dec 10, 2024 • Confidence: 92%</div>
+                        </div>
+                        <button class="btn">View Report</button>
+                    </div>
+                    <div class="report-item">
+                        <div class="report-info">
+                            <h4>Product Review Sentiment Analysis</h4>
+                            <div class="report-meta">Generated on Dec 5, 2024 • Confidence: 85%</div>
+                        </div>
+                        <button class="btn">View Report</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ===== MAIN TAB NAVIGATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all main navigation tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const workflowSubnav = document.getElementById('workflow-subnav');
+            
+            // Initialize: Show Overview tab, hide others
+            tabContents.forEach(content => {
+                if (content.id !== 'overview-tab') {
+                    content.style.display = 'none';
+                }
+            });
+            
+            // Add click event to each main tab
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show/hide tab content
+                    tabContents.forEach(content => {
+                        if (content.id === `${targetTab}-tab`) {
+                            content.style.display = 'block';
+                            content.classList.add('active');
+                        } else {
+                            content.style.display = 'none';
+                            content.classList.remove('active');
+                        }
+                    });
+                    
+                    // Show/hide workflow subnav
+                    if (targetTab === 'workflow') {
+                        workflowSubnav.classList.add('active');
+                    } else {
+                        workflowSubnav.classList.remove('active');
+                    }
+                });
+            });
+            
+            // ===== WORKFLOW SUB-TAB NAVIGATION =====
+            const subNavTabs = document.querySelectorAll('.sub-nav-tab');
+            const subTabContents = document.querySelectorAll('.sub-tab-content');
+            
+            // Initialize: Show only the first sub-tab (Agent Flow)
+            subTabContents.forEach(content => {
+                if (content.id !== 'flow-subtab') {
+                    content.style.display = 'none';
+                }
+            });
+            
+            // Add click event to each sub-tab
+            subNavTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetSubTab = this.getAttribute('data-subtab');
+                    
+                    // Update active sub-tab
+                    subNavTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show/hide sub-tab content
+                    subTabContents.forEach(content => {
+                        if (content.id === `${targetSubTab}-subtab`) {
+                            content.style.display = 'block';
+                            content.classList.add('active');
+                        } else {
+                            content.style.display = 'none';
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            // ===== AGENT CARD INTERACTION =====
+            const agentCards = document.querySelectorAll('.agent-card');
+            agentCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    // Remove active class from all cards
+                    agentCards.forEach(c => c.classList.remove('active'));
+                    // Add active class to clicked card
+                    this.classList.add('active');
+                });
+            });
+            
+            // ===== CONFIDENCE SLIDER =====
+            const slider = document.querySelector('input[type="range"]');
+            if (slider) {
+                const sliderValue = slider.nextElementSibling;
+                slider.addEventListener('input', function() {
+                    sliderValue.textContent = `${this.value}%`;
+                });
+            }
+            
+            // ===== AGENT RUN/BUTTON FUNCTIONALITY =====
+            const runButtons = document.querySelectorAll('.btn-run');
+            const stopButtons = document.querySelectorAll('.btn-stop');
+            
+            // Agent states
+            const agentStates = {
+                1: { status: 'completed', progress: 100 },
+                2: { status: 'completed', progress: 100 },
+                3: { status: 'running', progress: 65 },
+                4: { status: 'ready', progress: 0 }
+            };
+            
+            // Handle run button clicks
+            runButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent card click
+                    
+                    if (this.classList.contains('completed')) {
+                        // Reset to ready
+                        this.classList.remove('completed');
+                        this.textContent = 'Run Agent';
+                        const card = this.closest('.agent-card');
+                        const statusBadge = card.querySelector('.status-badge');
+                        statusBadge.className = 'status-badge status-ready';
+                        statusBadge.textContent = 'Ready';
+                    } else if (!this.classList.contains('running')) {
+                        // Start running
+                        this.classList.add('running');
+                        this.textContent = 'Running...';
+                        const card = this.closest('.agent-card');
+                        const statusBadge = card.querySelector('.status-badge');
+                        statusBadge.className = 'status-badge status-running';
+                        statusBadge.textContent = 'Running';
+                        
+                        // Show progress bar
+                        const progressBar = card.querySelector('.progress-bar');
+                        if (progressBar) {
+                            progressBar.classList.add('visible');
+                            const progressFill = progressBar.querySelector('.progress-fill');
+                            progressFill.style.width = '0%';
+                            
+                            // Simulate progress
+                            let progress = 0;
+                            const interval = setInterval(() => {
+                                progress += Math.random() * 15;
+                                if (progress >= 100) {
+                                    progress = 100;
+                                    clearInterval(interval);
+                                    this.classList.remove('running');
+                                    this.classList.add('completed');
+                                    this.textContent = 'Completed';
+                                    statusBadge.className = 'status-badge status-completed';
+                                    statusBadge.textContent = 'Completed';
+                                }
+                                progressFill.style.width = `${progress}%`;
+                            }, 500);
+                        }
+                    }
+                });
+            });
+            
+            // Handle stop button clicks
+            stopButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent card click
+                    const card = this.closest('.agent-card');
+                    const runButton = card.querySelector('.btn-run');
+                    const statusBadge = card.querySelector('.status-badge');
+                    const progressBar = card.querySelector('.progress-bar');
+                    
+                    // Reset to ready state
+                    if (runButton) {
+                        runButton.classList.remove('running', 'completed');
+                        runButton.textContent = 'Run Agent';
+                    }
+                    
+                    if (statusBadge) {
+                        statusBadge.className = 'status-badge status-ready';
+                        statusBadge.textContent = 'Ready';
+                    }
+                    
+                    if (progressBar) {
+                        progressBar.classList.remove('visible');
+                        const progressFill = progressBar.querySelector('.progress-fill');
+                        if (progressFill) {
+                            progressFill.style.width = '0%';
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
