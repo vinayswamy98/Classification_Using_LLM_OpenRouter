@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Workflow System</title>
+    <style>
+        /* ===== BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #131821;
+        }
+
+        /* ===== HEADER STYLES ===== */
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 750;
+            color: #094fdc;
+        }
+
+        /* ===== MAIN NAVIGATION ===== */
+        .nav-tabs {
+            background: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 0 2rem;
+            position: sticky;
+            top: 65px;
+            z-index: 99;
+            display: flex;
+            gap: 2rem;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #718096;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: #2d3748;
+        }
+
+        .nav-tab.active {
+            color: #3182ce;
+            border-bottom-color: #3182ce;
+        }
+
+        /* ===== WORKFLOW SUB NAVIGATION ===== */
+        .sub-nav {
+            background: #f7fafc;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .sub-nav.active {
+            display: block;
+        }
+
+        .sub-nav-tabs {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .sub-nav-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #4a5568;
+            background: transparent;
+            white-space: nowrap;
+        }
+
+        .sub-nav-tab:hover {
+            background: #ffffff;
+            color: #2d3748;
+        }
+
+        .sub-nav-tab.active {
+            background: #ffffff;
+            color: #3182ce;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* ===== LAYOUT ===== */
+        .container {
+            display: flex;
+            max-width: 1800px;
+            margin: 0 auto;
+            min-height: calc(100vh - 130px);
+        }
+
+        /* ===== FILTERS SIDEBAR ===== */
+        .filters {
+            width: 280px;
+            background: #ffffff;
+            padding: 1.5rem;
+            border-right: 1px solid #e2e8f0;
+            position: sticky;
+            top: 130px;
+            height: calc(100vh - 130px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            background: #ffffff;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #3182ce;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .content {
+            flex: 1;
+            padding: 2rem;
+            min-width: 0; /* Prevents overflow */
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+        }
+
+        .content-header h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-header p {
+            color: #718096;
+        }
+
+        /* ===== TAB CONTENT STYLES ===== */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sub-tab-content {
+            display: none;
+        }
+
+        .sub-tab-content.active {
+            display: block;
+        }
+
+        /* ===== AGENT DETAILS TABS ===== */
+        .agent-details-tabs {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .agent-details-nav {
+            display: flex;
+            background: #f7fafc;
+            border-bottom: 1px solid #e2e8f0;
+            overflow-x: auto;
+        }
+
+        .agent-tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: #4a5568;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .agent-tab:hover {
+            background: #ffffff;
+            color: #2d3748;
+        }
+
+        .agent-tab.active {
+            color: #3182ce;
+            border-bottom-color: #3182ce;
+            background: #ffffff;
+        }
+
+        .agent-tab-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #edf2f7;
+            color: #4a5568;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .agent-tab.active .agent-tab-number {
+            background: #3182ce;
+            color: #ffffff;
+        }
+
+        .agent-details-pane {
+            display: none;
+            padding: 2rem;
+        }
+
+        .agent-details-pane.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .agent-pane-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .agent-pane-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .agent-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .agent-status.completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .agent-status.running {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .agent-status.ready {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .agent-pane-description {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 800px;
+        }
+
+        /* ===== SUB-STEP SECTION ===== */
+        .sub-steps-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+
+        .sub-steps-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .sub-steps-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .sub-steps-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .sub-steps-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .sub-step-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            transition: all 0.2s;
+        }
+
+        .sub-step-card:hover {
+            border-color: #cbd5e0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .sub-step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .sub-step-title {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 1rem;
+        }
+
+        .sub-step-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .sub-step-status.ready {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .sub-step-status.running {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .sub-step-status.completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .sub-step-description {
+            color: #718096;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .sub-step-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* ===== RESULTS TABLE ===== */
+        .results-section {
+            margin: 2rem 0;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .results-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .results-table-container {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table th {
+            background: #f7fafc;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .results-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+            font-size: 0.875rem;
+        }
+
+        .results-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .results-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .result-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .result-status-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .result-status-error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .result-status-warning {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .result-status-processing {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .view-details-btn {
+            padding: 0.25rem 0.75rem;
+            background: transparent;
+            color: #3182ce;
+            border: 1px solid #3182ce;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .view-details-btn:hover {
+            background: #3182ce;
+            color: #ffffff;
+        }
+
+        /* ===== BUTTON STYLES ===== */
+        .btn {
+            padding: 0.5rem 1rem;
+            background: #3182ce;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            min-width: 100px;
+        }
+
+        .btn:hover {
+            background: #2c5282;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            min-width: 80px;
+        }
+
+        .btn-running {
+            background: #38a169;
+        }
+
+        .btn-running:hover {
+            background: #2f855a;
+        }
+
+        .btn-completed {
+            background: #4a5568;
+        }
+
+        .btn-stop {
+            background: #fc8181;
+        }
+
+        .btn-stop:hover {
+            background: #e53e3e;
+        }
+
+        /* ===== AGENT CONTROL SECTION ===== */
+        .agent-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+
+        .agent-progress {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: #4a5568;
+        }
+
+        .progress-bar-container {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3182ce, #63b3ed);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* ===== METRICS SECTION ===== */
+        .agent-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .metric-card {
+            background: #f7fafc;
+            padding: 1.5rem;
+            border-radius: 6px;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        /* ===== RESPONSIVE STYLES ===== */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .filters {
+                width: 100%;
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .nav-tabs {
+                top: 0;
+                position: relative;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header, .content {
+                padding: 1rem;
+            }
+            
+            .nav-tabs {
+                padding: 0 1rem;
+            }
+            
+            .sub-nav {
+                padding: 1rem;
+            }
+            
+            .agent-details-nav {
+                flex-wrap: wrap;
+            }
+            
+            .agent-tab {
+                flex: 1;
+                min-width: 140px;
+                text-align: center;
+            }
+            
+            .sub-steps-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .agent-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .agent-progress {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .agent-tab {
+                min-width: 120px;
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+            }
+            
+            .sub-step-actions {
+                flex-direction: column;
+            }
+            
+            .btn, .btn-sm {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== HEADER ===== -->
+    <div class="header">
+        <h1>Multi-Agent Data Processing System</h1>
+    </div>
+
+    <!-- ===== MAIN NAVIGATION TABS ===== -->
+    <div class="nav-tabs">
+        <div class="nav-tab active" data-tab="overview">Overview</div>
+        <div class="nav-tab" data-tab="workflow">Workflow</div>
+        <div class="nav-tab" data-tab="performance">Performance</div>
+        <div class="nav-tab" data-tab="reports">Reports</div>
+    </div>
+
+    <!-- ===== WORKFLOW SUB NAVIGATION ===== -->
+    <div class="sub-nav" id="workflow-subnav">
+        <div class="sub-nav-tabs">
+            <div class="sub-nav-tab active" data-subtab="flow">Agent Flow</div>
+            <div class="sub-nav-tab" data-subtab="agents">Agent Details</div>
+            <div class="sub-nav-tab" data-subtab="pipeline">Pipeline</div>
+            <div class="sub-nav-tab" data-subtab="timeline">Timeline</div>
+            <div class="sub-nav-tab" data-subtab="logs">Logs</div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN CONTAINER ===== -->
+    <div class="container">
+        <!-- ===== FILTERS SIDEBAR ===== -->
+        <aside class="filters">
+            <div class="filter-group">
+                <label class="filter-label">Dataset</label>
+                <select class="filter-input">
+                    <option>Customer Feedback Q4 2024</option>
+                    <option>Sales Data December</option>
+                    <option>Product Reviews Archive</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Date Range</label>
+                <input type="date" class="filter-input" value="2024-12-01">
+                <input type="date" class="filter-input" value="2024-12-17" style="margin-top: 0.5rem;">
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Confidence Threshold</label>
+                <input type="range" class="filter-input" min="0" max="100" value="75">
+                <div style="text-align: center; margin-top: 0.25rem; font-size: 0.875rem; color: #4a5568;">75%</div>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select class="filter-input">
+                    <option>All</option>
+                    <option>Draft</option>
+                    <option>Validated</option>
+                    <option>Final</option>
+                </select>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT AREA ===== -->
+        <main class="content">
+            <!-- ===== OVERVIEW TAB ===== -->
+            <div class="tab-content active" id="overview-tab">
+                <div class="content-header">
+                    <h2>System Overview</h2>
+                    <p>Monitor the performance and status of your multi-agent workflow</p>
+                </div>
+
+                <div class="overview-cards">
+                    <div class="overview-card">
+                        <h3>Total Datasets Processed</h3>
+                        <div class="value">247</div>
+                    </div>
+                    <div class="overview-card">
+                        <h3>Active Workflows</h3>
+                        <div class="value">12</div>
+                    </div>
+                    <div class="overview-card">
+                        <h3>Average Confidence</h3>
+                        <div class="value">89%</div>
+                    </div>
+                    <div class="overview-card">
+                        <h3>Reports Generated</h3>
+                        <div class="value">156</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== WORKFLOW TAB ===== -->
+            <div class="tab-content" id="workflow-tab">
+                <!-- Agent Flow Sub-tab -->
+                <div class="sub-tab-content active" id="flow-subtab">
+                    <div class="content-header">
+                        <h2>Agent Flow</h2>
+                        <p>Visualize the sequential flow of data through your agent pipeline</p>
+                    </div>
+
+                    <div class="agent-flow-container">
+                        <div class="agent-flow">
+                            <!-- Step 1: Data Preparation -->
+                            <div class="flow-step completed">
+                                <div class="flow-step-header">
+                                    <div class="step-number">1</div>
+                                    <div class="step-title">Data Preparation</div>
+                                    <span class="status-badge status-completed">Completed</span>
+                                </div>
+                                <p>Ingests raw data, performs cleaning, normalization, and validation to ensure quality inputs for downstream agents.</p>
+                                <div class="step-connector"></div>
+                            </div>
+
+                            <!-- Step 2: Summarization -->
+                            <div class="flow-step completed">
+                                <div class="flow-step-header">
+                                    <div class="step-number">2</div>
+                                    <div class="step-title">Summarization Agent</div>
+                                    <span class="status-badge status-completed">Completed</span>
+                                </div>
+                                <p>Analyzes prepared data to extract key themes, patterns, and insights using advanced NLP techniques.</p>
+                                <div class="step-connector"></div>
+                            </div>
+
+                            <!-- Step 3: Validation -->
+                            <div class="flow-step running">
+                                <div class="flow-step-header">
+                                    <div class="step-number">3</div>
+                                    <div class="step-title">Validation Agent</div>
+                                    <span class="status-badge status-running">Running</span>
+                                </div>
+                                <p>Cross-references summaries with source data, flags inconsistencies, and assigns confidence scores.</p>
+                                <div class="step-connector"></div>
+                            </div>
+
+                            <!-- Step 4: Report Generation -->
+                            <div class="flow-step ready">
+                                <div class="flow-step-header">
+                                    <div class="step-number">4</div>
+                                    <div class="step-title">Report Generation</div>
+                                    <span class="status-badge status-ready">Ready</span>
+                                </div>
+                                <p>Compiles validated insights into structured reports with visualizations and actionable recommendations.</p>
+                                <div class="step-connector"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Details Sub-tab -->
+                <div class="sub-tab-content" id="agents-subtab">
+                    <div class="content-header">
+                        <h2>Agent Details</h2>
+                        <p>Inspect each processing stage and manage agent execution</p>
+                    </div>
+
+                    <div class="agent-details-tabs">
+                        <!-- Agent Tabs Navigation -->
+                        <div class="agent-details-nav">
+                            <div class="agent-tab active" data-agent="1">
+                                <span class="agent-tab-number">1</span> Data Preparation 
+                            </div>
+                            <div class="agent-tab" data-agent="2">
+                                <span class="agent-tab-number">2</span> Summarization
+                            </div>
+                            <div class="agent-tab" data-agent="3">
+                                <span class="agent-tab-number">3</span> Validation
+                            </div>
+                            <div class="agent-tab" data-agent="4">
+                                <span class="agent-tab-number">4</span> Report Generation
+                            </div>
+                        </div>
+
+                        <!-- Agent 1 Pane - Data Preparation -->
+                        <div class="agent-details-pane active" data-agent="1">
+                            <div class="agent-pane-header">
+                                <h2 class="agent-pane-title">Data Preparation</h2>
+                                <span class="agent-status completed">Completed</span>
+                            </div>
+                            
+                            <p class="agent-pane-description">
+                                Ingests raw data from multiple sources, performs cleaning, normalization, and validation to ensure quality inputs for downstream agents. 
+                                This agent handles data formatting, missing value imputation, and outlier detection to prepare datasets for analysis.
+                            </p>
+
+                            <!-- Sub-steps for Data Preparation -->
+                            <div class="sub-steps-section">
+                                <div class="sub-steps-header">
+                                    <h3 class="sub-steps-title">Data Processing Sub-steps</h3>
+                                    <div class="sub-steps-actions">
+                                        <button class="btn btn-sm" id="run-all-data-steps">Run All Steps</button>
+                                        <button class="btn btn-sm btn-stop" id="stop-all-data-steps">Stop All</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="sub-steps-list">
+                                    <div class="sub-step-card" data-substep="data-cleaning">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Data Cleaning</div>
+                                            <span class="sub-step-status completed">Completed</span>
+                                        </div>
+                                        <p class="sub-step-description">Remove duplicates, handle missing values, correct data types and formats</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="data-transformation">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Data Transformation</div>
+                                            <span class="sub-step-status completed">Completed</span>
+                                        </div>
+                                        <p class="sub-step-description">Normalize, encode, and scale data for consistent processing</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="data-validation">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Data Validation</div>
+                                            <span class="sub-step-status completed">Completed</span>
+                                        </div>
+                                        <p class="sub-step-description">Validate data quality, check constraints, and verify integrity</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="feature-engineering">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Feature Engineering</div>
+                                            <span class="sub-step-status ready">Ready</span>
+                                        </div>
+                                        <p class="sub-step-description">Create derived features, extract patterns, and generate insights</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Results Table -->
+                            <div class="results-section">
+                                <div class="results-header">
+                                    <h3 class="results-title">Processing Results</h3>
+                                    <button class="btn btn-sm" id="refresh-results">Refresh</button>
+                                </div>
+                                
+                                <div class="results-table-container">
+                                    <table class="results-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sub-step</th>
+                                                <th>Status</th>
+                                                <th>Records Processed</th>
+                                                <th>Errors</th>
+                                                <th>Processing Time</th>
+                                                <th>Last Run</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Data Cleaning</td>
+                                                <td><span class="result-status result-status-success">Completed</span></td>
+                                                <td>15,432</td>
+                                                <td>0</td>
+                                                <td>1.2s</td>
+                                                <td>10:30:15</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Data Transformation</td>
+                                                <td><span class="result-status result-status-success">Completed</span></td>
+                                                <td>15,432</td>
+                                                <td>2</td>
+                                                <td>0.8s</td>
+                                                <td>10:30:17</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Data Validation</td>
+                                                <td><span class="result-status result-status-success">Completed</span></td>
+                                                <td>15,432</td>
+                                                <td>0</td>
+                                                <td>1.5s</td>
+                                                <td>10:30:19</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Feature Engineering</td>
+                                                <td><span class="result-status result-status-warning">Pending</span></td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Main Agent Controls -->
+                            <div class="agent-controls">
+                                <div class="agent-progress">
+                                    <div class="progress-label">
+                                        <span>Overall Progress</span>
+                                        <span>75%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" style="width: 75%"></div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-completed" disabled>Completed</button>
+                                <button class="btn btn-stop">Reset Agent</button>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="agent-metrics">
+                                <div class="metric-card">
+                                    <div class="metric-label">Total Records Processed</div>
+                                    <div class="metric-value">15,432</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Total Processing Time</div>
+                                    <div class="metric-value">3.5s</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Success Rate</div>
+                                    <div class="metric-value">99.8%</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Last Completed</div>
+                                    <div class="metric-value">10:30 AM</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 2 Pane - Summarization -->
+                        <div class="agent-details-pane" data-agent="2">
+                            <div class="agent-pane-header">
+                                <h2 class="agent-pane-title">Summarization Agent</h2>
+                                <span class="agent-status completed">Completed</span>
+                            </div>
+                            
+                            <p class="agent-pane-description">
+                                Analyzes prepared data to extract key themes, patterns, and insights using advanced NLP techniques. 
+                                Employs transformer-based models to generate concise summaries while maintaining contextual accuracy and relevance.
+                            </p>
+
+                            <!-- Sub-steps for Summarization -->
+                            <div class="sub-steps-section">
+                                <div class="sub-steps-header">
+                                    <h3 class="sub-steps-title">Analysis Sub-steps</h3>
+                                    <div class="sub-steps-actions">
+                                        <button class="btn btn-sm" id="run-all-summary-steps">Run All Steps</button>
+                                        <button class="btn btn-sm btn-stop" id="stop-all-summary-steps">Stop All</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="sub-steps-list">
+                                    <div class="sub-step-card" data-substep="topic-modeling">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Topic Modeling</div>
+                                            <span class="sub-step-status completed">Completed</span>
+                                        </div>
+                                        <p class="sub-step-description">Identify and extract key topics from the dataset</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="sentiment-analysis">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Sentiment Analysis</div>
+                                            <span class="sub-step-status completed">Completed</span>
+                                        </div>
+                                        <p class="sub-step-description">Analyze emotional tone and sentiment patterns</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="key-phrase-extraction">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Key Phrase Extraction</div>
+                                            <span class="sub-step-status completed">Completed</span>
+                                        </div>
+                                        <p class="sub-step-description">Extract important phrases and concepts</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Results Table -->
+                            <div class="results-section">
+                                <div class="results-header">
+                                    <h3 class="results-title">Analysis Results</h3>
+                                    <button class="btn btn-sm" id="refresh-summary-results">Refresh</button>
+                                </div>
+                                
+                                <div class="results-table-container">
+                                    <table class="results-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sub-step</th>
+                                                <th>Status</th>
+                                                <th>Themes Identified</th>
+                                                <th>Confidence Score</th>
+                                                <th>Processing Time</th>
+                                                <th>Last Run</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Topic Modeling</td>
+                                                <td><span class="result-status result-status-success">Completed</span></td>
+                                                <td>15</td>
+                                                <td>94%</td>
+                                                <td>2.1s</td>
+                                                <td>10:32:15</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Sentiment Analysis</td>
+                                                <td><span class="result-status result-status-success">Completed</span></td>
+                                                <td>8</td>
+                                                <td>89%</td>
+                                                <td>1.8s</td>
+                                                <td>10:32:18</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Key Phrase Extraction</td>
+                                                <td><span class="result-status result-status-success">Completed</span></td>
+                                                <td>23</td>
+                                                <td>91%</td>
+                                                <td>1.2s</td>
+                                                <td>10:32:20</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Main Agent Controls -->
+                            <div class="agent-controls">
+                                <div class="agent-progress">
+                                    <div class="progress-label">
+                                        <span>Overall Progress</span>
+                                        <span>100%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-completed" disabled>Completed</button>
+                                <button class="btn btn-stop">Reset Agent</button>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="agent-metrics">
+                                <div class="metric-card">
+                                    <div class="metric-label">Total Themes</div>
+                                    <div class="metric-value">23</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Avg Confidence</div>
+                                    <div class="metric-value">91.3%</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Processing Time</div>
+                                    <div class="metric-value">5.1s</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Last Run</div>
+                                    <div class="metric-value">10:32 AM</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 3 Pane - Validation -->
+                        <div class="agent-details-pane" data-agent="3">
+                            <div class="agent-pane-header">
+                                <h2 class="agent-pane-title">Validation Agent</h2>
+                                <span class="agent-status running">Running</span>
+                            </div>
+                            
+                            <p class="agent-pane-description">
+                                Cross-references summaries with source data, flags inconsistencies, and assigns confidence scores. 
+                                Validates the accuracy and reliability of generated insights through multiple verification checks.
+                            </p>
+
+                            <!-- Sub-steps for Validation -->
+                            <div class="sub-steps-section">
+                                <div class="sub-steps-header">
+                                    <h3 class="sub-steps-title">Validation Sub-steps</h3>
+                                    <div class="sub-steps-actions">
+                                        <button class="btn btn-sm" id="run-all-validation-steps">Run All Steps</button>
+                                        <button class="btn btn-sm btn-stop" id="stop-all-validation-steps">Stop All</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="sub-steps-list">
+                                    <div class="sub-step-card" data-substep="consistency-check">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Consistency Check</div>
+                                            <span class="sub-step-status running">Running</span>
+                                        </div>
+                                        <p class="sub-step-description">Verify consistency between source and summarized data</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm btn-running" disabled>Running</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="accuracy-validation">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Accuracy Validation</div>
+                                            <span class="sub-step-status running">Running</span>
+                                        </div>
+                                        <p class="sub-step-description">Validate factual accuracy of extracted insights</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm btn-running" disabled>Running</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="confidence-scoring">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Confidence Scoring</div>
+                                            <span class="sub-step-status ready">Ready</span>
+                                        </div>
+                                        <p class="sub-step-description">Assign confidence scores to each insight</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="bias-detection">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Bias Detection</div>
+                                            <span class="sub-step-status ready">Ready</span>
+                                        </div>
+                                        <p class="sub-step-description">Detect and flag potential biases in analysis</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Results Table -->
+                            <div class="results-section">
+                                <div class="results-header">
+                                    <h3 class="results-title">Validation Results</h3>
+                                    <button class="btn btn-sm" id="refresh-validation-results">Refresh</button>
+                                </div>
+                                
+                                <div class="results-table-container">
+                                    <table class="results-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sub-step</th>
+                                                <th>Status</th>
+                                                <th>Checks Completed</th>
+                                                <th>Issues Found</th>
+                                                <th>Avg Confidence</th>
+                                                <th>Processing Time</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Consistency Check</td>
+                                                <td><span class="result-status result-status-processing">Processing</span></td>
+                                                <td>12/15</td>
+                                                <td>3</td>
+                                                <td>87%</td>
+                                                <td>1.8s</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Accuracy Validation</td>
+                                                <td><span class="result-status result-status-processing">Processing</span></td>
+                                                <td>6/8</td>
+                                                <td>1</td>
+                                                <td>92%</td>
+                                                <td>1.2s</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Confidence Scoring</td>
+                                                <td><span class="result-status result-status-warning">Pending</span></td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Bias Detection</td>
+                                                <td><span class="result-status result-status-warning">Pending</span></td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Main Agent Controls -->
+                            <div class="agent-controls">
+                                <div class="agent-progress">
+                                    <div class="progress-label">
+                                        <span>Overall Progress</span>
+                                        <span>65%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" style="width: 65%"></div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-running" disabled>Running...</button>
+                                <button class="btn btn-stop">Stop Agent</button>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="agent-metrics">
+                                <div class="metric-card">
+                                    <div class="metric-label">Total Checks</div>
+                                    <div class="metric-value">18/23</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Issues Found</div>
+                                    <div class="metric-value">4</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Avg Confidence</div>
+                                    <div class="metric-value">87.5%</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Elapsed Time</div>
+                                    <div class="metric-value">3.0s</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 4 Pane - Report Generation -->
+                        <div class="agent-details-pane" data-agent="4">
+                            <div class="agent-pane-header">
+                                <h2 class="agent-pane-title">Report Generation</h2>
+                                <span class="agent-status ready">Ready</span>
+                            </div>
+                            
+                            <p class="agent-pane-description">
+                                Compiles validated insights into structured reports with visualizations and actionable recommendations. 
+                                Generates executive summaries, detailed analyses, and exportable formats for stakeholder distribution.
+                            </p>
+
+                            <!-- Sub-steps for Report Generation -->
+                            <div class="sub-steps-section">
+                                <div class="sub-steps-header">
+                                    <h3 class="sub-steps-title">Report Generation Sub-steps</h3>
+                                    <div class="sub-steps-actions">
+                                        <button class="btn btn-sm" id="run-all-report-steps">Run All Steps</button>
+                                        <button class="btn btn-sm btn-stop" id="stop-all-report-steps">Stop All</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="sub-steps-list">
+                                    <div class="sub-step-card" data-substep="executive-summary">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Executive Summary</div>
+                                            <span class="sub-step-status ready">Ready</span>
+                                        </div>
+                                        <p class="sub-step-description">Generate high-level summary for executives</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="detailed-analysis">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Detailed Analysis</div>
+                                            <span class="sub-step-status ready">Ready</span>
+                                        </div>
+                                        <p class="sub-step-description">Create comprehensive analysis sections</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="visualization-generation">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Visualization Generation</div>
+                                            <span class="sub-step-status ready">Ready</span>
+                                        </div>
+                                        <p class="sub-step-description">Generate charts, graphs, and visual aids</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sub-step-card" data-substep="format-export">
+                                        <div class="sub-step-header">
+                                            <div class="sub-step-title">Format & Export</div>
+                                            <span class="sub-step-status ready">Ready</span>
+                                        </div>
+                                        <p class="sub-step-description">Format report and prepare for export</p>
+                                        <div class="sub-step-actions">
+                                            <button class="btn btn-sm" data-action="run">Run</button>
+                                            <button class="btn btn-sm btn-stop" data-action="stop">Stop</button>
+                                            <button class="btn btn-sm" data-action="view">View Results</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Results Table -->
+                            <div class="results-section">
+                                <div class="results-header">
+                                    <h3 class="results-title">Report Generation Results</h3>
+                                    <button class="btn btn-sm" id="refresh-report-results">Refresh</button>
+                                </div>
+                                
+                                <div class="results-table-container">
+                                    <table class="results-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sub-step</th>
+                                                <th>Status</th>
+                                                <th>Sections Generated</th>
+                                                <th>Visualizations</th>
+                                                <th>Processing Time</th>
+                                                <th>Last Run</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Executive Summary</td>
+                                                <td><span class="result-status result-status-warning">Pending</span></td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Detailed Analysis</td>
+                                                <td><span class="result-status result-status-warning">Pending</span></td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Visualization Generation</td>
+                                                <td><span class="result-status result-status-warning">Pending</span></td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Format & Export</td>
+                                                <td><span class="result-status result-status-warning">Pending</span></td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td><button class="view-details-btn">Details</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Main Agent Controls -->
+                            <div class="agent-controls">
+                                <div class="agent-progress">
+                                    <div class="progress-label">
+                                        <span>Overall Progress</span>
+                                        <span>0%</span>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <button class="btn" id="run-report-agent">Run Agent</button>
+                                <button class="btn btn-stop" disabled>Stop Agent</button>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="agent-metrics">
+                                <div class="metric-card">
+                                    <div class="metric-label">Total Reports Generated</div>
+                                    <div class="metric-value">156</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Avg. Processing Time</div>
+                                    <div class="metric-value">3.2s</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Avg. Report Score</div>
+                                    <div class="metric-value">4.8/5</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Last Report</div>
+                                    <div class="metric-value">Yesterday</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipeline View Sub-tab -->
+                <div class="sub-tab-content" id="pipeline-subtab">
+                    <div class="content-header">
+                        <h2>Pipeline View</h2>
+                        <p>Visualize the complete data flow through your agent pipeline</p>
+                    </div>
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2rem; text-align: center;">
+                        <h3>Pipeline Visualization Coming Soon</h3>
+                        <p>Interactive diagram showing data flow between agents</p>
+                    </div>
+                </div>
+
+                <!-- Timeline View Sub-tab -->
+                <div class="sub-tab-content" id="timeline-subtab">
+                    <div class="content-header">
+                        <h2>Execution Timeline</h2>
+                        <p>Track the chronological execution of all agents</p>
+                    </div>
+                    <div class="timeline-view">
+                        <div class="timeline-item">
+                            <div class="timeline-marker completed"></div>
+                            <div class="timeline-content">
+                                <strong>Data Preparation</strong>
+                                <p>Completed at 10:30 AM • 15,432 records processed</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker completed"></div>
+                            <div class="timeline-content">
+                                <strong>Summarization Agent</strong>
+                                <p>Completed at 10:32 AM • 23 themes identified</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker running"></div>
+                            <div class="timeline-content">
+                                <strong>Validation Agent</strong>
+                                <p>Running • 18/23 checks completed</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <strong>Report Generation</strong>
+                                <p>Pending • Waiting for validation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Logs Sub-tab -->
+                <div class="sub-tab-content" id="logs-subtab">
+                    <div class="content-header">
+                        <h2>Execution Logs</h2>
+                        <p>Monitor detailed execution logs and system events</p>
+                    </div>
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2rem;">
+                        <h3>Real-time Logs</h3>
+                        <pre style="background: #f7fafc; padding: 1rem; border-radius: 4px; margin-top: 1rem; font-family: monospace; font-size: 0.875rem;">
+[10:30:15] INFO: Data Preparation agent started
+[10:30:17] INFO: Processing 15,432 records
+[10:30:19] INFO: Summarization agent initiated
+[10:30:25] INFO: Theme analysis completed (23 themes)
+[10:32:30] INFO: Validation agent started
+[10:32:45] INFO: 18/23 validation checks completed
+[10:32:50] INFO: Report generation queued
+                        </pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== PERFORMANCE TAB ===== -->
+            <div class="tab-content" id="performance-tab">
+                <div class="content-header">
+                    <h2>Performance Dashboard</h2>
+                    <p>Monitor system performance metrics and agent efficiency</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Processing Speed</h3>
+                        <div style="display: flex; align-items: flex-end; height: 150px; gap: 0.5rem; margin-top: 1rem;">
+                            <div style="flex: 1; background: #3182ce; height: 120px; border-radius: 4px 4px 0 0;"></div>
+                            <div style="flex: 1; background: #3182ce; height: 90px; border-radius: 4px 4px 0 0;"></div>
+                            <div style="flex: 1; background: #38a169; height: 150px; border-radius: 4px 4px 0 0;"></div>
+                            <div style="flex: 1; background: #e2e8f0; height: 40px; border-radius: 4px 4px 0 0;"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 1rem; font-size: 0.875rem;">
+                            <div>Average: 3.8s per agent</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Success Rate</h3>
+                        <div style="text-align: center; padding: 2rem;">
+                            <div style="font-size: 3rem; font-weight: 700; color: #38a169;">94.7%</div>
+                            <div style="color: #718096; margin-top: 0.5rem;">Completed successfully</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Resource Usage</h3>
+                        <div style="margin-top: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>CPU Usage</span>
+                                <span>42%</span>
+                            </div>
+                            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                <div style="width: 42%; height: 100%; background: #3182ce;"></div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Memory</span>
+                                <span>67%</span>
+                            </div>
+                            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                <div style="width: 67%; height: 100%; background: #38a169;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== REPORTS TAB ===== -->
+            <div class="tab-content" id="reports-tab">
+                <div class="content-header">
+                    <h2>Generated Reports</h2>
+                    <p>Access all completed analysis reports from your workflows</p>
+                </div>
+
+                <div class="reports-list">
+                    <div class="report-item">
+                        <div class="report-info">
+                            <h4>Q4 Customer Feedback Analysis</h4>
+                            <div class="report-meta">Generated on Dec 15, 2024 • Confidence: 89%</div>
+                        </div>
+                        <button class="btn">View Report</button>
+                    </div>
+                    <div class="report-item">
+                        <div class="report-info">
+                            <h4>Sales Performance Review - December</h4>
+                            <div class="report-meta">Generated on Dec 10, 2024 • Confidence: 92%</div>
+                        </div>
+                        <button class="btn">View Report</button>
+                    </div>
+                    <div class="report-item">
+                        <div class="report-info">
+                            <h4>Product Review Sentiment Analysis</h4>
+                            <div class="report-meta">Generated on Dec 5, 2024 • Confidence: 85%</div>
+                        </div>
+                        <button class="btn">View Report</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ===== MAIN TAB NAVIGATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all main navigation tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const workflowSubnav = document.getElementById('workflow-subnav');
+            
+            // Initialize: Show Overview tab, hide others
+            tabContents.forEach(content => {
+                if (content.id !== 'overview-tab') {
+                    content.style.display = 'none';
+                }
+            });
+            
+            // Add click event to each main tab
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show/hide tab content
+                    tabContents.forEach(content => {
+                        if (content.id === `${targetTab}-tab`) {
+                            content.style.display = 'block';
+                            content.classList.add('active');
+                        } else {
+                            content.style.display = 'none';
+                            content.classList.remove('active');
+                        }
+                    });
+                    
+                    // Show/hide workflow subnav
+                    if (targetTab === 'workflow') {
+                        workflowSubnav.classList.add('active');
+                    } else {
+                        workflowSubnav.classList.remove('active');
+                    }
+                });
+            });
+            
+            // ===== WORKFLOW SUB-TAB NAVIGATION =====
+            const subNavTabs = document.querySelectorAll('.sub-nav-tab');
+            const subTabContents = document.querySelectorAll('.sub-tab-content');
+            
+            // Initialize: Show only the first sub-tab (Agent Flow)
+            subTabContents.forEach(content => {
+                if (content.id !== 'flow-subtab') {
+                    content.style.display = 'none';
+                }
+            });
+            
+            // Add click event to each sub-tab
+            subNavTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetSubTab = this.getAttribute('data-subtab');
+                    
+                    // Update active sub-tab
+                    subNavTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show/hide sub-tab content
+                    subTabContents.forEach(content => {
+                        if (content.id === `${targetSubTab}-subtab`) {
+                            content.style.display = 'block';
+                            content.classList.add('active');
+                        } else {
+                            content.style.display = 'none';
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            // ===== AGENT DETAILS TABS =====
+            const agentTabs = document.querySelectorAll('.agent-tab');
+            const agentPanes = document.querySelectorAll('.agent-details-pane');
+            
+            // Initialize: Show only the first agent pane
+            agentPanes.forEach(pane => {
+                if (!pane.classList.contains('active')) {
+                    pane.style.display = 'none';
+                }
+            });
+            
+            // Add click event to each agent tab
+            agentTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const agentId = this.getAttribute('data-agent');
+                    
+                    // Update active agent tab
+                    agentTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show/hide agent pane
+                    agentPanes.forEach(pane => {
+                        if (pane.getAttribute('data-agent') === agentId) {
+                            pane.style.display = 'block';
+                            pane.classList.add('active');
+                        } else {
+                            pane.style.display = 'none';
+                            pane.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            // ===== CONFIDENCE SLIDER =====
+            const slider = document.querySelector('input[type="range"]');
+            if (slider) {
+                const sliderValue = slider.nextElementSibling;
+                slider.addEventListener('input', function() {
+                    sliderValue.textContent = `${this.value}%`;
+                });
+            }
+            
+            // ===== SUB-STEP FUNCTIONALITY =====
+            const subStepButtons = document.querySelectorAll('.sub-step-actions .btn');
+            const runAllButtons = document.querySelectorAll('.sub-steps-actions .btn:not(.btn-stop)');
+            const stopAllButtons = document.querySelectorAll('.sub-steps-actions .btn-stop');
+            
+            // Handle individual sub-step buttons
+            subStepButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const action = this.getAttribute('data-action');
+                    const subStepCard = this.closest('.sub-step-card');
+                    const subStepId = subStepCard.getAttribute('data-substep');
+                    const agentPane = this.closest('.agent-details-pane');
+                    const agentId = agentPane.getAttribute('data-agent');
+                    
+                    if (action === 'run') {
+                        runSubStep(subStepCard, agentId, subStepId);
+                    } else if (action === 'stop') {
+                        stopSubStep(subStepCard, agentId, subStepId);
+                    } else if (action === 'view') {
+                        viewSubStepResults(subStepCard, agentId, subStepId);
+                    }
+                });
+            });
+            
+            // Handle "Run All Steps" buttons
+            runAllButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const agentPane = this.closest('.agent-details-pane');
+                    const subStepCards = agentPane.querySelectorAll('.sub-step-card');
+                    let completed = 0;
+                    
+                    subStepCards.forEach(card => {
+                        const statusBadge = card.querySelector('.sub-step-status');
+                        if (!statusBadge.classList.contains('completed') && 
+                            !statusBadge.classList.contains('running')) {
+                            runSubStep(card, agentPane.getAttribute('data-agent'), card.getAttribute('data-substep'));
+                            completed++;
+                        }
+                    });
+                    
+                    if (completed === 0) {
+                        alert('All sub-steps are already completed or running!');
+                    }
+                });
+            });
+            
+            // Handle "Stop All" buttons
+            stopAllButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const agentPane = this.closest('.agent-details-pane');
+                    const subStepCards = agentPane.querySelectorAll('.sub-step-card');
+                    
+                    subStepCards.forEach(card => {
+                        const statusBadge = card.querySelector('.sub-step-status');
+                        if (statusBadge.classList.contains('running')) {
+                            stopSubStep(card, agentPane.getAttribute('data-agent'), card.getAttribute('data-substep'));
+                        }
+                    });
+                });
+            });
+            
+            // Handle refresh buttons
+            const refreshButtons = document.querySelectorAll('.results-header .btn-sm');
+            refreshButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const agentPane = this.closest('.agent-details-pane');
+                    const agentId = agentPane.getAttribute('data-agent');
+                    refreshResultsTable(agentId);
+                });
+            });
+            
+            // View details buttons in table
+            const viewDetailsButtons = document.querySelectorAll('.view-details-btn');
+            viewDetailsButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const row = this.closest('tr');
+                    const stepName = row.cells[0].textContent;
+                    alert(`Detailed results for: ${stepName}\nThis would show detailed logs, metrics, and outputs in a real application.`);
+                });
+            });
+            
+            // Main agent run button
+            const mainRunButton = document.getElementById('run-report-agent');
+            if (mainRunButton) {
+                mainRunButton.addEventListener('click', function() {
+                    runMainAgent(this.closest('.agent-details-pane'));
+                });
+            }
+            
+            // Sub-step functions
+            function runSubStep(card, agentId, subStepId) {
+                const statusBadge = card.querySelector('.sub-step-status');
+                const runButton = card.querySelector('[data-action="run"]');
+                const stopButton = card.querySelector('[data-action="stop"]');
+                const viewButton = card.querySelector('[data-action="view"]');
+                
+                // Update UI
+                statusBadge.className = 'sub-step-status running';
+                statusBadge.textContent = 'Running';
+                runButton.disabled = true;
+                runButton.className = 'btn btn-sm btn-running';
+                runButton.textContent = 'Running';
+                stopButton.disabled = false;
+                viewButton.disabled = true;
+                
+                // Simulate processing
+                const progressInterval = setInterval(() => {
+                    // In a real app, this would check actual progress
+                    // For simulation, randomly complete after 2-5 seconds
+                }, 100);
+                
+                // Simulate completion after random time
+                const completionTime = 2000 + Math.random() * 3000;
+                setTimeout(() => {
+                    clearInterval(progressInterval);
+                    
+                    // Update to completed
+                    statusBadge.className = 'sub-step-status completed';
+                    statusBadge.textContent = 'Completed';
+                    runButton.disabled = true;
+                    runButton.className = 'btn btn-sm btn-completed';
+                    runButton.textContent = 'Completed';
+                    stopButton.disabled = true;
+                    viewButton.disabled = false;
+                    
+                    // Update results table
+                    updateResultsTable(agentId, subStepId, 'completed');
+                    
+                    // Check if all sub-steps are completed
+                    checkAllSubStepsCompleted(card.closest('.agent-details-pane'));
+                }, completionTime);
+                
+                // Update results table to show processing
+                updateResultsTable(agentId, subStepId, 'processing');
+            }
+            
+            function stopSubStep(card, agentId, subStepId) {
+                const statusBadge = card.querySelector('.sub-step-status');
+                const runButton = card.querySelector('[data-action="run"]');
+                const stopButton = card.querySelector('[data-action="stop"]');
+                const viewButton = card.querySelector('[data-action="view"]');
+                
+                // Update UI
+                statusBadge.className = 'sub-step-status ready';
+                statusBadge.textContent = 'Ready';
+                runButton.disabled = false;
+                runButton.className = 'btn btn-sm';
+                runButton.textContent = 'Run';
+                stopButton.disabled = true;
+                viewButton.disabled = false;
+                
+                // Update results table
+                updateResultsTable(agentId, subStepId, 'stopped');
+            }
+            
+            function viewSubStepResults(card, agentId, subStepId) {
+                const stepName = card.querySelector('.sub-step-title').textContent;
+                alert(`Viewing detailed results for: ${stepName}\n\nAgent: ${agentId}\nSub-step: ${subStepId}\n\nThis would open a detailed results panel in a real application.`);
+            }
+            
+            function updateResultsTable(agentId, subStepId, status) {
+                // Find the table row for this sub-step
+                const agentPane = document.querySelector(`.agent-details-pane[data-agent="${agentId}"]`);
+                const table = agentPane.querySelector('.results-table');
+                const rows = table.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const stepName = row.cells[0].textContent;
+                    const subStepCard = agentPane.querySelector(`.sub-step-card[data-substep="${subStepId}"]`);
+                    const subStepTitle = subStepCard.querySelector('.sub-step-title').textContent;
+                    
+                    if (stepName === subStepTitle) {
+                        const statusCell = row.cells[1];
+                        const statusBadge = statusCell.querySelector('.result-status');
+                        
+                        if (status === 'completed') {
+                            statusBadge.className = 'result-status result-status-success';
+                            statusBadge.textContent = 'Completed';
+                            
+                            // Update other cells with sample data
+                            row.cells[2].textContent = '15,432';
+                            row.cells[3].textContent = '0';
+                            row.cells[4].textContent = (1 + Math.random() * 2).toFixed(1) + 's';
+                            row.cells[5].textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        } else if (status === 'processing') {
+                            statusBadge.className = 'result-status result-status-processing';
+                            statusBadge.textContent = 'Processing';
+                        } else if (status === 'stopped') {
+                            statusBadge.className = 'result-status result-status-warning';
+                            statusBadge.textContent = 'Stopped';
+                        }
+                    }
+                });
+            }
+            
+            function refreshResultsTable(agentId) {
+                const agentPane = document.querySelector(`.agent-details-pane[data-agent="${agentId}"]`);
+                const table = agentPane.querySelector('.results-table');
+                
+                // Simulate refreshing data
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const statusBadge = row.cells[1].querySelector('.result-status');
+                    if (statusBadge.textContent === 'Processing') {
+                        // Simulate progress
+                        const progress = Math.min(100, parseFloat(row.cells[2].textContent || 0) + 10);
+                        row.cells[2].textContent = `${progress}`;
+                    }
+                });
+                
+                alert(`Refreshed results for Agent ${agentId}`);
+            }
+            
+            function checkAllSubStepsCompleted(agentPane) {
+                const subStepCards = agentPane.querySelectorAll('.sub-step-card');
+                const allCompleted = Array.from(subStepCards).every(card => {
+                    const statusBadge = card.querySelector('.sub-step-status');
+                    return statusBadge.classList.contains('completed');
+                });
+                
+                if (allCompleted) {
+                    // Update main agent status
+                    const mainStatus = agentPane.querySelector('.agent-status');
+                    const mainRunButton = agentPane.querySelector('.agent-controls .btn:not(.btn-stop)');
+                    const mainProgressBar = agentPane.querySelector('.progress-bar-fill');
+                    
+                    if (mainStatus && !mainStatus.classList.contains('completed')) {
+                        mainStatus.className = 'agent-status completed';
+                        mainStatus.textContent = 'Completed';
+                        
+                        if (mainRunButton) {
+                            mainRunButton.className = 'btn btn-completed';
+                            mainRunButton.disabled = true;
+                            mainRunButton.textContent = 'Completed';
+                        }
+                        
+                        if (mainProgressBar) {
+                            mainProgressBar.style.width = '100%';
+                            agentPane.querySelector('.progress-label span:last-child').textContent = '100%';
+                        }
+                    }
+                }
+            }
+            
+            function runMainAgent(agentPane) {
+                const mainStatus = agentPane.querySelector('.agent-status');
+                const mainRunButton = agentPane.querySelector('.agent-controls .btn:not(.btn-stop)');
+                const mainStopButton = agentPane.querySelector('.agent-controls .btn-stop');
+                const mainProgressBar = agentPane.querySelector('.progress-bar-fill');
+                const progressLabel = agentPane.querySelector('.progress-label span:last-child');
+                
+                // Update UI
+                mainStatus.className = 'agent-status running';
+                mainStatus.textContent = 'Running';
+                mainRunButton.disabled = true;
+                mainRunButton.className = 'btn btn-running';
+                mainRunButton.textContent = 'Running...';
+                mainStopButton.disabled = false;
+                
+                // Run all sub-steps
+                const subStepCards = agentPane.querySelectorAll('.sub-step-card');
+                let completedCount = 0;
+                
+                subStepCards.forEach((card, index) => {
+                    setTimeout(() => {
+                        const statusBadge = card.querySelector('.sub-step-status');
+                        if (!statusBadge.classList.contains('completed') && 
+                            !statusBadge.classList.contains('running')) {
+                            runSubStep(card, agentPane.getAttribute('data-agent'), card.getAttribute('data-substep'));
+                        }
+                        
+                        // Update progress
+                        completedCount++;
+                        const progress = Math.round((completedCount / subStepCards.length) * 100);
+                        
+                        if (mainProgressBar) {
+                            mainProgressBar.style.width = `${progress}%`;
+                            progressLabel.textContent = `${progress}%`;
+                        }
+                    }, index * 1000);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
